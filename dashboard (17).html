@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>Projektų pelningumas</title>
+<style>
+:root{
+  --font:"Segoe UI",system-ui,sans-serif;
+  --bg:#EDEEF2;
+  --surface:#FFFFFF;
+  --border:#E0E0E0;
+  --radius:8px;
+  --tp:#1A1A1A;
+  --ts:#6B7280;
+  --tm:#9E9E9E;
+  --accent:#2563EB;
+  --ok:#16A34A;
+  --err:#DC2626;
+  --W:1280px;
+  --H:720px;
+  --nav:52px;
+  --topbar:48px;
+  --fbar:50px;
+  --shell:622px;
+  --pad:14px;
+  --nb:#1A3369;   /* nav/sidebar background */
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{width:100%;height:100%;background:#C4C6CE;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+body{
+  width:var(--W);height:var(--H);flex-shrink:0;overflow:hidden;
+  font-family:var(--font);color:var(--tp);
+  display:flex;flex-direction:row;  /* ROW: sidebar left, main right */
+  box-shadow:0 8px 48px rgba(0,0,0,.22);
+}
+
+/* ════════════════════════════════════════
+   LEFT COLUMN: sidebar spans full height
+   Width = --nav = 52px
+   Contains topbar-nav segment + sidebar nav buttons
+════════════════════════════════════════ */
+.left-col{
+  width:var(--nav);flex-shrink:0;
+  background:var(--nb);
+  display:flex;flex-direction:column;
+  height:100%;
+}
+/* top segment matching topbar height */
+.left-top{
+  height:var(--topbar);flex-shrink:0;
+  background:#152B5E;
+  display:flex;align-items:center;justify-content:center;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+/* filter bar segment matching filterbar height */
+.left-fbar{
+  height:var(--fbar);flex-shrink:0;
+  background:var(--nb);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+/* nav buttons area */
+.sidenav{
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;
+  padding:8px 0;gap:2px;
+}
+.nav-btn{
+  width:44px;height:46px;border:none;border-radius:6px;
+  background:transparent;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;color:rgba(255,255,255,.52);font-family:var(--font);
+  transition:background .12s,color .12s;
+}
+.nav-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.9);}
+.nav-btn.active{background:rgba(255,255,255,.16);color:#fff;}
+.nav-ico{width:18px;height:18px;display:block;flex-shrink:0;}
+.nav-lbl{font-size:7px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1;}
+
+/* ════════════════════════════════════════
+   RIGHT COLUMN: topbar + filterbar + content
+════════════════════════════════════════ */
+.right-col{
+  flex:1;min-width:0;
+  display:flex;flex-direction:column;
+  height:100%;
+}
+
+/* TOPBAR */
+.topbar{
+  height:var(--topbar);flex-shrink:0;background:var(--accent);
+  display:flex;align-items:center;padding:0 16px;
+}
+.topbar-brand{font-size:14px;font-weight:700;color:#fff;}
+.topbar-ts{font-size:11px;color:rgba(255,255,255,.5);margin-left:auto;}
+
+/* FILTERBAR */
+.filterbar{
+  height:var(--fbar);flex-shrink:0;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:14px;
+}
+.fg{display:flex;flex-direction:column;gap:3px;}
+.fg label{font-size:10px;color:var(--ts);font-weight:500;}
+.fg select{
+  font-size:11px;height:26px;border:1px solid var(--border);border-radius:4px;
+  background:var(--surface);color:var(--tp);
+  padding:0 6px;cursor:pointer;font-family:var(--font);min-width:118px;
+}
+.fg select.af{border-color:var(--accent);background:#EEF4FF;}
+.fg label.af{color:var(--accent);font-weight:600;}
+
+/* CONTENT AREA */
+.ca{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);}
+.page{display:none;flex-direction:column;height:100%;overflow:hidden;}
+.page.active{display:flex;}
+
+/* ════ P1
+  shell height = 622px
+  10+68(kpi)+8+26(chips)+8+30(hdr)+flex(tbl)+10 = 622
+════ */
+.p1-in{height:100%;padding:10px var(--pad);display:flex;flex-direction:column;gap:8px;overflow:hidden;}
+
+.kpi-row{display:flex;gap:8px;flex-shrink:0;height:68px;}
+.kpi-card{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 14px;}
+.kpi-card.kp{border-left:3px solid var(--ok);}
+.kpi-card.kp.neg{border-left-color:var(--err);}
+.kpi-card.km{border-left:3px solid var(--accent);}
+.kpi-lbl{font-size:10px;color:var(--tm);margin-bottom:3px;font-weight:500;}
+.kpi-val{font-size:20px;font-weight:700;color:var(--tp);font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.15;}
+
+.chips{flex-shrink:0;height:26px;display:flex;align-items:center;gap:5px;}
+.chips-lbl{font-size:10px;color:var(--tm);white-space:nowrap;}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border:1px solid var(--border);border-radius:10px;font-size:10px;font-weight:500;color:var(--ts);background:var(--surface);cursor:pointer;user-select:none;white-space:nowrap;}
+.chip.on{background:#EEF4FF;border-color:var(--accent);color:var(--accent);}
+.chip input{display:none;}
+
+.tc{flex:1;min-height:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;}
+.tc-hdr{flex-shrink:0;height:30px;padding:0 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.tc-title{font-size:12px;font-weight:600;color:var(--tp);}
+.tc-sub{font-size:10px;color:var(--tm);}
+.tc-hint{margin-left:auto;font-size:10px;color:var(--tm);}
+.tsc{flex:1;min-height:0;overflow-x:auto;overflow-y:auto;}
+.tsc::-webkit-scrollbar{width:4px;height:4px;}
+.tsc::-webkit-scrollbar-thumb{background:#C4C9D4;border-radius:2px;}
+
+table{border-collapse:collapse;font-size:11px;table-layout:auto;white-space:nowrap;min-width:100%;}
+thead th{position:sticky;top:0;z-index:2;color:var(--ts);font-weight:600;padding:5px 8px;border-bottom:1px solid var(--border);background:#F7F8FA;text-align:left;}
+thead th.r{text-align:right;}
+td{color:var(--tp);padding:4px 8px;border-bottom:1px solid #F0F1F3;}
+tr.dr:hover>td{background:#EEF1F9;cursor:pointer;}
+
+.eb{width:14px;height:14px;border:none;border-radius:2px;background:transparent;cursor:pointer;color:var(--tm);font-size:11px;font-family:monospace;display:inline-flex;align-items:center;justify-content:center;transition:transform .14s,color .12s;line-height:1;}
+.eb:hover{color:var(--accent);}
+.eb.open{transform:rotate(90deg);color:var(--accent);}
+
+/* Sub-row header */
+tr.sub-hdr>td{padding:3px 8px;font-size:10px;font-weight:700;color:var(--ts);background:#E4E6F0!important;border-bottom:1px solid #CDD0E0;}
+tr.sub-hdr>td:first-child{border-left:3px solid #6B7280;padding-left:5px;}
+
+/* Sub-row data */
+tr.sub-row>td{padding:3px 8px;font-size:10px;color:var(--ts);background:#F4F5FB!important;border-bottom:1px solid #EAEBF4;}
+tr.sub-row>td:first-child{border-left:3px solid var(--sub-c,#888);padding:3px 0;}
+
+/* Sub-total */
+tr.sub-tot>td{padding:3px 8px;font-size:10px;font-weight:700;color:var(--tp);background:#ECEDF6!important;border-top:1px solid #CDD0E0;border-bottom:2px solid #C0C4D8;}
+
+tfoot td{position:sticky;bottom:0;z-index:2;font-weight:700;background:#EEF0F7!important;border-top:2px solid #C8CCE0;border-bottom:none!important;padding:5px 8px;font-size:11px;}
+.r{text-align:right;font-variant-numeric:tabular-nums;}
+.empty-st{padding:32px;text-align:center;color:var(--tm);font-size:12px;}
+
+/* ════ P2
+  622px: back(36)+body(586)
+  body: pad(8+8)+kpi(62)+gap(8)+inv(flex:1)
+════ */
+.p2-back{flex-shrink:0;height:36px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 var(--pad);}
+.bb{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--tp);font-family:var(--font);display:flex;align-items:center;gap:5px;}
+.bb:hover{background:#F0F1F5;}
+.bb-ico{width:12px;height:12px;display:block;}
+.p2-body{height:586px;flex-shrink:0;overflow:hidden;}
+.p2-in{height:100%;padding:8px var(--pad);display:flex;flex-direction:column;gap:8px;overflow:hidden;}
+.p2-kpi{display:flex;gap:8px;flex-shrink:0;height:62px;}
+.p2-kc{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;}
+.p2-kc.kcp{border-left:3px solid var(--ok);}
+.p2-kc.kcp.neg{border-left-color:var(--err);}
+.p2-kc.kcm{border-left:3px solid var(--accent);}
+.p2-kc .kpi-lbl{font-size:10px;margin-bottom:2px;}
+.p2-kc .kpi-val{font-size:17px;}
+.inv-card{flex:1;min-height:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;}
+.obj-strip{display:flex;align-items:center;gap:8px;flex:1;min-width:0;}
+.obj-cod{font-size:11px;font-weight:700;color:var(--ts);background:#F0F1F5;padding:1px 6px;border-radius:3px;white-space:nowrap;flex-shrink:0;}
+.obj-name{font-size:12px;font-weight:600;color:var(--tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.obj-dv{font-size:10px;color:var(--ts);white-space:nowrap;flex-shrink:0;}
+.nodrill{flex:1;display:flex;align-items:center;justify-content:center;color:var(--tm);font-size:12px;}
+
+/* ════ P3 ════ */
+.p3-in{height:100%;padding:10px var(--pad);display:flex;flex-direction:column;}
+.chart-row{flex:1;min-height:0;display:flex;gap:10px;}
+.cl{flex:0 0 55%;min-width:0;display:flex;flex-direction:column;}
+.cr{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;}
+.cpanel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;}
+.cl .cpanel{flex:1;min-height:0;}
+.cr .cpanel{flex:1;min-height:0;}
+.chdr{flex-shrink:0;height:28px;font-size:11px;font-weight:600;color:var(--tp);padding:0 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;}
+.cleg{flex-shrink:0;display:flex;flex-wrap:wrap;gap:2px 8px;padding:4px 10px;border-bottom:1px solid var(--border);}
+.li{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--ts);}
+.ld{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+.ccw{flex:1;min-height:0;position:relative;overflow:hidden;}
+canvas{display:block;}
+</style>
+</head>
+<body>
+
+<!-- LEFT COLUMN: full-height sidebar with topbar and filterbar segments -->
+<div class="left-col">
+  <div class="left-top">
+    <!-- brand icon or empty — aligns with topbar height -->
+  </div>
+  <div class="left-fbar">
+    <!-- aligns with filterbar height -->
+  </div>
+  <nav class="sidenav">
+    <button type="button" class="nav-btn active" data-page="p1" onclick="nav('p1',this)" title="Apžvalga">
+      <svg class="nav-ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="2" y="2" width="14" height="14" rx="1.5"/>
+        <line x1="2" y1="7" x2="16" y2="7"/>
+        <line x1="2" y1="12" x2="16" y2="12"/>
+        <line x1="7" y1="2" x2="7" y2="16"/>
+      </svg>
+      <span class="nav-lbl">Apžvalga</span>
+    </button>
+    <button type="button" class="nav-btn" data-page="p2" onclick="nav('p2',this)" title="Sąskaitos">
+      <svg class="nav-ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M4 2h7l3 3v11H4V2z"/>
+        <polyline points="11,2 11,5 14,5"/>
+        <line x1="6" y1="9" x2="12" y2="9"/>
+        <line x1="6" y1="12" x2="10" y2="12"/>
+      </svg>
+      <span class="nav-lbl">Sąskaitos</span>
+    </button>
+    <button type="button" class="nav-btn" data-page="p3" onclick="nav('p3',this)" title="Diagramos">
+      <svg class="nav-ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+        <line x1="2" y1="16" x2="16" y2="16"/>
+        <rect x="3" y="9" width="3" height="7" rx="0.5"/>
+        <rect x="7.5" y="5" width="3" height="11" rx="0.5"/>
+        <rect x="12" y="2" width="3" height="14" rx="0.5"/>
+      </svg>
+      <span class="nav-lbl">Diagramos</span>
+    </button>
+  </nav>
+</div>
+
+<!-- RIGHT COLUMN: topbar + filterbar + content -->
+<div class="right-col">
+  <div class="topbar">
+    <span class="topbar-brand">Projektų pelningumas</span>
+    <span class="topbar-ts" id="ts"></span>
+  </div>
+  <div class="filterbar">
+    <div class="fg"><label id="lbl-obj">Objektas</label><select id="f-obj" onchange="af()"><option value="">Select all</option></select></div>
+    <div class="fg"><label id="lbl-dv">Atsakingas DV</label><select id="f-dv" onchange="af()"><option value="">Select all</option></select></div>
+    <div class="fg"><label id="lbl-metai">Metai</label>
+      <select id="f-metai" onchange="af()">
+        <option value="">Select all</option><option value="2024">2024</option><option value="2025">2025</option>
+      </select>
+    </div>
+    <div class="fg"><label id="lbl-men">Mėnesis</label>
+      <select id="f-men" onchange="af()">
+        <option value="">Select all</option>
+        <option value="10">Spalis</option><option value="11">Lapkritis</option>
+        <option value="1">Sausis</option><option value="2">Vasaris</option>
+        <option value="3">Kovas</option><option value="4">Balandis</option>
+        <option value="5">Gegužė</option><option value="6">Birželis</option>
+        <option value="7">Liepa</option><option value="8">Rugpjūtis</option>
+        <option value="9">Rugsėjis</option><option value="12">Gruodis</option>
+      </select>
+    </div>
+    <div class="fg"><label id="lbl-tiek">Tiekėjas</label><select id="f-tiek" onchange="af()"><option value="">Select all</option></select></div>
+  </div>
+  <div class="ca">
+    <!-- P1 -->
+    <div class="page active" id="p1">
+      <div class="p1-in">
+        <div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-lbl">Viso pardavimai</div><div class="kpi-val" id="kv-p">—</div></div>
+          <div class="kpi-card"><div class="kpi-lbl">Viso išlaidos</div><div class="kpi-val" id="kv-i">—</div></div>
+          <div class="kpi-card kp" id="kpi-pel"><div class="kpi-lbl">Pelnas / nuostolis</div><div class="kpi-val" id="kv-n">—</div></div>
+          <div class="kpi-card km"><div class="kpi-lbl">Pelno marža</div><div class="kpi-val" id="kv-m">—</div></div>
+        </div>
+        <div class="chips">
+          <span class="chips-lbl">Rodikliai:</span>
+          <label class="chip on" id="ch-p"><input type="checkbox" checked onchange="tCols()">Pirkimai</label>
+          <label class="chip on" id="ch-m"><input type="checkbox" checked onchange="tCols()">Mechanizmai</label>
+          <label class="chip on" id="ch-d"><input type="checkbox" checked onchange="tCols()">DU</label>
+          <label class="chip on" id="ch-b"><input type="checkbox" checked onchange="tCols()">Brig. aut.</label>
+          <label class="chip on" id="ch-v"><input type="checkbox" checked onchange="tCols()">DV DU</label>
+          <label class="chip on" id="ch-g"><input type="checkbox" checked onchange="tCols()">Geodezija</label>
+          <label class="chip on" id="ch-i"><input type="checkbox" checked onchange="tCols()">Viso išl.</label>
+        </div>
+        <div class="tc">
+          <div class="tc-hdr">
+            <span class="tc-title">Objektų pelningumas — detalė</span>
+            <span class="tc-sub" id="p1-sub"></span>
+            <span class="tc-hint">&#8250; — išskleisti sąskaitas</span>
+          </div>
+          <div class="tsc"><div id="p1-body"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P2 -->
+    <div class="page" id="p2">
+      <div class="p2-back">
+        <button type="button" class="bb" onclick="goBack()">
+          <svg class="bb-ico" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="7,2 3,6 7,10"/></svg>
+          Grįžti į apžvalgą
+        </button>
+      </div>
+      <div class="p2-body"><div class="p2-in" id="p2-in"><div class="nodrill">Pasirinkite objektą iš Apžvalgos lentelės.</div></div></div>
+    </div>
+
+    <!-- P3 -->
+    <div class="page" id="p3">
+      <div class="p3-in">
+        <div class="chart-row">
+          <div class="cl">
+            <div class="cpanel">
+              <div class="chdr">Pelnas / nuostolis pagal objektą (EUR)</div>
+              <div class="ccw" id="cw1"><canvas id="c1"></canvas></div>
+            </div>
+          </div>
+          <div class="cr">
+            <div class="cpanel">
+              <div class="chdr">Išlaidų struktūra pagal objektą (% nuo pardavimų)</div>
+              <div class="cleg">
+                <div class="li"><div class="ld" style="background:#1D4ED8"></div>Pirkimai</div>
+                <div class="li"><div class="ld" style="background:#38BDF8"></div>Mechanizmai</div>
+                <div class="li"><div class="ld" style="background:#7C3AED"></div>DU</div>
+                <div class="li"><div class="ld" style="background:#F59E0B"></div>Brig. aut. DU</div>
+                <div class="li"><div class="ld" style="background:#10B981"></div>DV DU</div>
+                <div class="li"><div class="ld" style="background:#EF4444"></div>Geodezija</div>
+              </div>
+              <div class="ccw" id="cw2"><canvas id="c2"></canvas></div>
+            </div>
+            <div class="cpanel">
+              <div class="chdr">Pelno marža pagal vadybininką (%)</div>
+              <div class="ccw" id="cw3"><canvas id="c3"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TIEKEJAI=["UAB Saulėtekis","UAB Mechanika Pro","UAB Geodata","MB Statybos partneriai","UAB Kelio darbai","UAB Vilniaus asfaltas","—"];
+const CAT_COL={"Pirkimai":"#1D4ED8","Mechanizmai":"#38BDF8","DU":"#7C3AED","Brig. aut. DU":"#F59E0B","DV DU":"#10B981","Geodezija":"#EF4444","Kita":"#6B7280"};
+const C2C=[{k:'pirk',c:'#1D4ED8'},{k:'mech',c:'#38BDF8'},{k:'du',c:'#7C3AED'},{k:'b',c:'#F59E0B'},{k:'dvdu',c:'#10B981'},{k:'g',c:'#EF4444'}];
+const LT_MEN=['sausio','vasario','kovo','balandžio','gegužės','birželio','liepos','rugpjūčio','rugsėjo','spalio','lapkričio','gruodžio'];
+
+const RAW=[
+  {s:"23-K14",o:"Skroblų g. atkarpa",          dv:"Arūnas",    p:42300, pirk:31200,mech:5400, du:7100, b:1200,dvdu:2100,g:800, m:2024},
+  {s:"23-K16",o:"YIT Sporto g. darbai",         dv:"Povilas",   p:38700, pirk:26400,mech:4200, du:6400, b:900, dvdu:1800,g:600, m:2024},
+  {s:"KLR",   o:"Kelrada asfaltavimas",          dv:"Dainius",   p:78500, pirk:55200,mech:9800, du:8900, b:1800,dvdu:2900,g:1100,m:2024},
+  {s:"MR",    o:"Main Road",                     dv:"Dainius",   p:142800,pirk:89600,mech:21300,du:16400,b:3100,dvdu:4900,g:1200,m:2024},
+  {s:"23-K12",o:"Žirmūnų gimnazija",             dv:"Valentyn",  p:67400, pirk:38900,mech:7200, du:9800, b:1700,dvdu:2600,g:900, m:2024},
+  {s:"A96",   o:"Antakalnio g. 96",              dv:"Žilvinas",  p:54200, pirk:28700,mech:5100, du:7600, b:1300,dvdu:2000,g:700, m:2024},
+  {s:"23-K13",o:"Liubčios g. 2",                 dv:"Martynas",  p:48900, pirk:24100,mech:4800, du:7200, b:1100,dvdu:1800,g:600, m:2024},
+  {s:"23-K01",o:"Vilniaus Šiaurinės dalies g.", dv:"Simas",     p:210000,pirk:124500,mech:18700,du:28400,b:5200,dvdu:7900,g:2800,m:2024},
+  {s:"GP",    o:"Gatvių priežiūra",              dv:"Dainius",   p:95200, pirk:48900,mech:6200, du:11800,b:2100,dvdu:3400,g:900, m:2024},
+  {s:"Žvyr",  o:"Gruntkelių lyginimas",          dv:"Dainius",   p:57800, pirk:19200,mech:8400, du:7100, b:1400,dvdu:2200,g:600, m:2024},
+  {s:"24-K03",o:"Teisinės paslaugos",            dv:"Remigijus", p:32100, pirk:8400, mech:1200, du:4800, b:600, dvdu:1400,g:300, m:2024},
+  {s:"MST",   o:"Masterlita",                    dv:"Dainius",   p:95200, pirk:38400,mech:5800, du:11200,b:2000,dvdu:3200,g:700, m:2024},
+  {s:"24-K02",o:"Metalo g.",                     dv:"Remigijus", p:185400,pirk:98200,mech:12400,du:22100,b:4200,dvdu:6800,g:1400,m:2024},
+];
+const DATA=RAW.map(r=>{const isl=r.pirk+r.mech+r.du+r.b+r.dvdu+r.g;return{...r,isl,pel:r.p-isl};});
+
+function genInv(r){
+  const TL=TIEKEJAI.length,seed=r.s.charCodeAt(0)*7+(r.s.charCodeAt(1)||3)*3;
+  const mkD=off=>{const d=new Date(2024,9,1);d.setDate(1+(seed*3+off*11)%60);return d;};
+  const t=i=>TIEKEJAI[(seed+i*5)%TL];
+  let c=1;
+  const mk=(kat,sum,ti,off,pst)=>({nr:`${r.s}/SF-${String(c++).padStart(3,'0')}`,date:mkD(off),tiek:t(ti),kat,sum,pst:pst||""});
+  const p1=Math.round(r.pirk*0.58);
+  const inv=[
+    mk("Pirkimai",p1,3,0,"Medžiagos I etapas"),
+    mk("Pirkimai",r.pirk-p1,4,5,"Medžiagos II etapas"),
+    mk("Mechanizmai",r.mech,1,2,"Technikos nuoma"),
+    mk("DU",r.du,6,3,"Darbo užmokestis"),
+    mk("Brig. aut. DU",r.b,6,1,"Brigados automobilis"),
+    mk("DV DU",r.dvdu,6,4,"Darbų vadovas")
+  ];
+  if(r.g>0)inv.push(mk("Geodezija",r.g,2,6,"Geodezijos paslaugos"));
+  inv.sort((a,b)=>b.date-a.date);
+  return inv;
+}
+DATA.forEach(d=>{d.inv=genInv(d);});
+
+let PAGE='p1',DRILL=null,LAST_IDX=null;
+const EXP=new Set();
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  // Lithuanian date: "2026 m. rugsėjo 9 d."
+  document.getElementById('ts').textContent=
+    `Atnaujinta: ${now.getFullYear()} m. ${LT_MEN[now.getMonth()]} ${now.getDate()} d.`;
+  initDD();af();
+});
+
+function initDD(){
+  const add=(id,v,t)=>{const o=document.createElement('option');o.value=v;o.textContent=t;document.getElementById(id).appendChild(o);};
+  [...DATA].sort((a,b)=>a.o.localeCompare(b.o,'lt')).forEach(d=>add('f-obj',d.s,`${d.s} — ${d.o}`));
+  [...new Set(DATA.map(d=>d.dv))].sort((a,b)=>a.localeCompare(b,'lt')).forEach(v=>add('f-dv',v,v));
+  [...new Set(DATA.flatMap(d=>d.inv.map(i=>i.tiek)))].filter(t=>t!=='—').sort((a,b)=>a.localeCompare(b,'lt')).forEach(t=>add('f-tiek',t,t));
+}
+
+function nav(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  PAGE=id;
+  if(id==='p2')renderP2();
+  if(id==='p3')raf2(drawAll);
+}
+function goBack(){
+  nav('p1',document.querySelector('[data-page="p1"]'));
+  if(LAST_IDX!==null)setTimeout(()=>{
+    const rows=document.querySelectorAll('#p1-body tr.dr');
+    if(rows[LAST_IDX])rows[LAST_IDX].scrollIntoView({block:'center',behavior:'smooth'});
+  },50);
+}
+function raf2(fn){requestAnimationFrame(()=>requestAnimationFrame(fn));}
+
+function flt(){return{
+  obj:document.getElementById('f-obj').value,
+  dv:document.getElementById('f-dv').value,
+  metai:document.getElementById('f-metai').value,
+  men:parseInt(document.getElementById('f-men').value)||0,
+  tiek:document.getElementById('f-tiek').value
+};}
+function filtered(){
+  const f=flt();
+  return DATA.filter(r=>{
+    if(f.obj&&r.s!==f.obj)return false;
+    if(f.dv&&r.dv!==f.dv)return false;
+    if(f.metai&&String(r.m)!==f.metai)return false;
+    if(f.men&&!r.inv.some(i=>i.date.getMonth()+1===f.men))return false;
+    if(f.tiek&&!r.inv.some(i=>i.tiek===f.tiek))return false;
+    return true;
+  });
+}
+function updAF(){
+  ['obj','dv','metai','men','tiek'].forEach(id=>{
+    const s=document.getElementById('f-'+id),l=document.getElementById('lbl-'+id),a=s.value!=='';
+    s.classList.toggle('af',a);if(l)l.classList.toggle('af',a);
+  });
+}
+function af(){updAF();const d=filtered();renderKPIs(d);renderP1(d);if(PAGE==='p2')renderP2();if(PAGE==='p3')raf2(drawAll);}
+
+const CG={p:['c-pe','c-pp'],m:['c-me','c-mp'],d:['c-de','c-dp'],b:['c-be','c-bp'],v:['c-ve','c-vp'],g:['c-ge','c-gp'],i:['c-ie','c-ip']};
+function tCols(){
+  Object.entries(CG).forEach(([k,ids])=>{
+    const chip=document.getElementById('ch-'+k);if(!chip)return;
+    const show=chip.querySelector('input').checked;
+    chip.classList.toggle('on',show);
+    ids.forEach(cls=>document.querySelectorAll('.'+cls).forEach(el=>el.style.display=show?'':'none'));
+  });
+}
+
+const fE=v=>Number(v).toLocaleString('lt-LT',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0€';
+const fP=v=>Number(v).toLocaleString('lt-LT',{minimumFractionDigits:1,maximumFractionDigits:1})+'\u00a0%';
+const pc=(v,p)=>p>0?v/p*100:0;
+const cs=v=>v>=0?'color:#16A34A':'color:#DC2626';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function fS(v){const neg=v<0,a=Math.abs(v);const s=a>=1000?(a/1000).toLocaleString('lt-LT',{maximumFractionDigits:1})+'\u202fk\u00a0€':a.toLocaleString('lt-LT',{maximumFractionDigits:0})+'\u00a0€';return neg?'\u2212'+s:s;}
+// Lithuanian date format: "2024 m. spalio 10 d."
+function fDt(d){return d.getFullYear()+' m. '+LT_MEN[d.getMonth()]+' '+d.getDate()+' d.';}
+
+function renderKPIs(data){
+  const tP=data.reduce((s,r)=>s+r.p,0),tI=data.reduce((s,r)=>s+r.isl,0),tN=tP-tI,marz=tP>0?tN/tP*100:0;
+  document.getElementById('kv-p').textContent=data.length?fE(tP):'—';
+  document.getElementById('kv-i').textContent=data.length?fE(tI):'—';
+  const ne=document.getElementById('kv-n');ne.textContent=data.length?fE(tN):'—';ne.style.color=data.length?(tN>=0?'#16A34A':'#DC2626'):'#1A1A1A';
+  document.getElementById('kpi-pel').classList.toggle('neg',data.length&&tN<0);
+  document.getElementById('kv-m').textContent=data.length?fP(marz):'—';
+}
+
+function renderP1(data){
+  const sub=document.getElementById('p1-sub'),el=document.getElementById('p1-body');
+  if(!data.length){sub.textContent='';el.innerHTML='<div class="empty-st">Pagal pasirinktus filtrus duomenų nėra.</div>';return;}
+  const sorted=[...data].sort((a,b)=>a.pel-b.pel);
+  sub.textContent=sorted.length+' obj. \u00b7 nuo žemiausios maržos';
+  const sm=k=>sorted.reduce((t,r)=>t+r[k],0);
+  const tP=sm('p'),tPirk=sm('pirk'),tMech=sm('mech'),tDu=sm('du'),tB=sm('b'),tDvdu=sm('dvdu'),tG=sm('g'),tI=sm('isl'),tN=tP-tI;
+
+  let h='<table><thead><tr>'
+    +'<th style="width:18px;padding:5px 2px;"></th>'
+    +'<th>Šifras</th><th>Objektas</th><th>Atsakingas DV</th>'
+    +'<th class="r">Pardavimai\u00a0\u20ac</th>'
+    +'<th class="r c-pe">Pirkimai\u00a0\u20ac</th><th class="r c-pp">Pirk.\u00a0%</th>'
+    +'<th class="r c-me">Mechanizmai\u00a0\u20ac</th><th class="r c-mp">Mech.\u00a0%</th>'
+    +'<th class="r c-de">DU\u00a0\u20ac</th><th class="r c-dp">DU\u00a0%</th>'
+    +'<th class="r c-be">Brig.aut.\u00a0\u20ac</th><th class="r c-bp">Brig.aut.\u00a0%</th>'
+    +'<th class="r c-ve">DV\u00a0DU\u00a0\u20ac</th><th class="r c-vp">DV\u00a0DU\u00a0%</th>'
+    +'<th class="r c-ge">Geodezija\u00a0\u20ac</th><th class="r c-gp">Geod.\u00a0%</th>'
+    +'<th class="r c-ie">Viso\u00a0išl.\u00a0\u20ac</th><th class="r c-ip">Viso\u00a0išl.\u00a0%</th>'
+    +'<th class="r">Pelnas/nuost.\u00a0\u20ac</th><th class="r">Marža\u00a0%</th>'
+    +'</tr></thead><tbody>';
+
+  sorted.forEach(function(r,i){
+    var isX=EXP.has(r.s);
+    h+='<tr class="dr" onclick="drillTo(\''+esc(r.s)+'\','+i+')">'
+      +'<td style="padding:4px 2px;text-align:center;" onclick="event.stopPropagation();toggleExp(\''+esc(r.s)+'\')">'
+      +'<button type="button" class="eb'+(isX?' open':'')+'">&#8250;</button></td>'
+      +'<td>'+esc(r.s)+'</td><td>'+esc(r.o)+'</td><td>'+esc(r.dv)+'</td>'
+      +'<td class="r">'+fE(r.p)+'</td>'
+      +'<td class="r c-pe">'+fE(r.pirk)+'</td><td class="r c-pp">'+fP(pc(r.pirk,r.p))+'</td>'
+      +'<td class="r c-me">'+fE(r.mech)+'</td><td class="r c-mp">'+fP(pc(r.mech,r.p))+'</td>'
+      +'<td class="r c-de">'+fE(r.du)+'</td><td class="r c-dp">'+fP(pc(r.du,r.p))+'</td>'
+      +'<td class="r c-be">'+fE(r.b)+'</td><td class="r c-bp">'+fP(pc(r.b,r.p))+'</td>'
+      +'<td class="r c-ve">'+fE(r.dvdu)+'</td><td class="r c-vp">'+fP(pc(r.dvdu,r.p))+'</td>'
+      +'<td class="r c-ge">'+fE(r.g)+'</td><td class="r c-gp">'+fP(pc(r.g,r.p))+'</td>'
+      +'<td class="r c-ie">'+fE(r.isl)+'</td><td class="r c-ip">'+fP(pc(r.isl,r.p))+'</td>'
+      +'<td class="r" style="'+cs(r.pel)+'">'+fE(r.pel)+'</td>'
+      +'<td class="r" style="'+cs(r.pel)+'">'+fP(pc(r.pel,r.p))+'</td>'
+      +'</tr>';
+
+    if(isX){
+      var f=flt();
+      var inv=r.inv.slice();
+      if(f.tiek)inv=inv.filter(function(i){return i.tiek===f.tiek;});
+      var tot=inv.reduce(function(s,i){return s+i.sum;},0);
+
+      // Sub-header row
+      h+='<tr class="sub-hdr">'
+        +'<td></td>'
+        +'<td>Sąskaitos Nr.</td>'
+        +'<td>Tiekėjas</td>'
+        +'<td>Data</td>'
+        +'<td>Kategorija</td>'
+        +'<td colspan="14">Pastabos</td>'
+        +'<td class="r">Suma\u00a0\u20ac</td>'
+        +'</tr>';
+
+      // Sub-data rows
+      inv.forEach(function(inv_i){
+        var cc=CAT_COL[inv_i.kat]||'#6B7280';
+        h+='<tr class="sub-row" style="--sub-c:'+cc+'">'
+          +'<td style="border-left:3px solid '+cc+';padding:3px 0;"></td>'
+          +'<td>'+esc(inv_i.nr)+'</td>'
+          +'<td>'+esc(inv_i.tiek)+'</td>'
+          +'<td>'+fDt(inv_i.date)+'</td>'
+          +'<td style="color:'+cc+';font-weight:600">'+esc(inv_i.kat)+'</td>'
+          +'<td colspan="14" style="color:var(--ts)">'+esc(inv_i.pst)+'</td>'
+          +'<td class="r" style="font-weight:600">'+fE(inv_i.sum)+'</td>'
+          +'</tr>';
+      });
+
+      // Sub-total row
+      h+='<tr class="sub-tot">'
+        +'<td></td>'
+        +'<td colspan="3">Iš viso: '+inv.length+' įrašas(-ai)</td>'
+        +'<td colspan="15"></td>'
+        +'<td class="r">'+fE(tot)+'</td>'
+        +'</tr>';
+    }
+  });
+
+  h+='</tbody><tfoot><tr>'
+    +'<td></td><td colspan="3">Iš viso</td>'
+    +'<td class="r">'+fE(tP)+'</td>'
+    +'<td class="r c-pe">'+fE(tPirk)+'</td><td class="r c-pp">'+fP(pc(tPirk,tP))+'</td>'
+    +'<td class="r c-me">'+fE(tMech)+'</td><td class="r c-mp">'+fP(pc(tMech,tP))+'</td>'
+    +'<td class="r c-de">'+fE(tDu)+'</td><td class="r c-dp">'+fP(pc(tDu,tP))+'</td>'
+    +'<td class="r c-be">'+fE(tB)+'</td><td class="r c-bp">'+fP(pc(tB,tP))+'</td>'
+    +'<td class="r c-ve">'+fE(tDvdu)+'</td><td class="r c-vp">'+fP(pc(tDvdu,tP))+'</td>'
+    +'<td class="r c-ge">'+fE(tG)+'</td><td class="r c-gp">'+fP(pc(tG,tP))+'</td>'
+    +'<td class="r c-ie">'+fE(tI)+'</td><td class="r c-ip">'+fP(pc(tI,tP))+'</td>'
+    +'<td class="r" style="'+cs(tN)+'">'+fE(tN)+'</td>'
+    +'<td class="r" style="'+cs(tN)+'">'+fP(pc(tN,tP))+'</td>'
+    +'</tr></tfoot></table>';
+
+  el.innerHTML=h;
+  tCols();
+}
+
+function toggleExp(s){if(EXP.has(s))EXP.delete(s);else EXP.add(s);renderP1(filtered());}
+
+function drillTo(s,idx){
+  DRILL=DATA.find(function(d){return d.s===s;})||null;
+  LAST_IDX=idx;
+  nav('p2',document.querySelector('[data-page="p2"]'));
+}
+
+function renderP2(){
+  var el=document.getElementById('p2-in');
+  if(!DRILL){el.innerHTML='<div class="nodrill">Pasirinkite objektą iš Apžvalgos lentelės.</div>';return;}
+  var r=DRILL,f=flt(),col=r.pel>=0?'#16A34A':'#DC2626';
+  var inv=r.inv.slice();
+  if(f.tiek)inv=inv.filter(function(i){return i.tiek===f.tiek;});
+  var tot=inv.reduce(function(s,i){return s+i.sum;},0);
+
+  var html='<div class="p2-kpi">'
+    +'<div class="p2-kc"><div class="kpi-lbl">Pardavimai</div><div class="kpi-val">'+fE(r.p)+'</div></div>'
+    +'<div class="p2-kc"><div class="kpi-lbl">Išlaidos</div><div class="kpi-val">'+fE(r.isl)+'</div></div>'
+    +'<div class="p2-kc kcp'+(r.pel<0?' neg':'')+'"><div class="kpi-lbl">Pelnas / nuostolis</div><div class="kpi-val" style="color:'+col+'">'+fE(r.pel)+'</div></div>'
+    +'<div class="p2-kc kcm"><div class="kpi-lbl">Pelno marža</div><div class="kpi-val" style="color:'+col+'">'+fP(pc(r.pel,r.p))+'</div></div>'
+    +'</div>';
+
+  html+='<div class="inv-card">'
+    +'<div class="tc-hdr">'
+    +'<div class="obj-strip"><span class="obj-cod">'+esc(r.s)+'</span><span class="obj-name">'+esc(r.o)+'</span></div>'
+    +'<span class="obj-dv" style="margin-left:12px">DV:\u00a0'+esc(r.dv)+'</span>'
+    +'<span class="tc-sub" style="margin-left:12px">'+inv.length+'\u00a0įrašas(-ai)</span>'
+    +'</div><div class="tsc">';
+
+  if(!inv.length){
+    html+='<div class="empty-st">Sąskaitų nėra.</div>';
+  } else {
+    html+='<table style="width:100%;"><thead><tr>'
+      +'<th>Sąskaitos Nr.</th><th>Data</th><th>Tiekėjas</th><th>Kategorija</th>'
+      +'<th class="r">Suma\u00a0\u20ac</th><th>Pastabos</th>'
+      +'</tr></thead><tbody>';
+    inv.forEach(function(i){
+      var cc=CAT_COL[i.kat]||'#6B7280';
+      html+='<tr>'
+        +'<td>'+esc(i.nr)+'</td>'
+        +'<td>'+fDt(i.date)+'</td>'
+        +'<td>'+esc(i.tiek)+'</td>'
+        +'<td style="color:'+cc+';font-weight:600">'+esc(i.kat)+'</td>'
+        +'<td class="r">'+fE(i.sum)+'</td>'
+        +'<td style="color:var(--ts)">'+esc(i.pst)+'</td>'
+        +'</tr>';
+    });
+    html+='</tbody><tfoot><tr><td colspan="4">Iš viso</td><td class="r">'+fE(tot)+'</td><td></td></tr></tfoot></table>';
+  }
+  html+='</div></div>';
+  el.innerHTML=html;
+}
+
+function prep(id){
+  var c=document.getElementById(id),par=c.parentElement;
+  var dpr=window.devicePixelRatio||1;
+  var W=Math.max(60,par.clientWidth),H=Math.max(60,par.clientHeight);
+  c.style.width=W+'px';c.style.height=H+'px';
+  c.width=Math.floor(W*dpr);c.height=Math.floor(H*dpr);
+  var ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+  return{ctx:ctx,W:W,H:H};
+}
+function noData(ctx,W,H){ctx.clearRect(0,0,W,H);ctx.fillStyle='#9E9E9E';ctx.font='12px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Duomenų nėra',W/2,H/2);}
+function drawAll(){if(PAGE!=='p3')return;drawC1();drawC2();drawC3();}
+function nice(r){if(r<=0)return 1;var e=Math.floor(Math.log10(r)),f=r/Math.pow(10,e),n=f<1.5?1:f<3?2:f<7?5:10;return n*Math.pow(10,e);}
+
+function drawHBar(opts){
+  var ctx=opts.ctx,W=opts.W,H=opts.H,rows=opts.rows;
+  var getVal=opts.getVal,getLabel=opts.getLabel,getColor=opts.getColor,formatVal=opts.formatVal;
+  var padT=opts.padT||8,padB=opts.padB||22,padR=opts.padR||14,LW=opts.LW||78;
+  var n=rows.length;
+  var rowH=(H-padT-padB)/n,barPd=rowH*0.13,barH=Math.max(7,rowH-barPd*2);
+  var barArea=W-LW-padR;
+  var vals=rows.map(getVal);
+  var minV=Math.min.apply(null,[0].concat(vals)),maxV=Math.max.apply(null,[0].concat(vals));
+  var span=(maxV-minV)||1;
+  var rMin=minV-span*0.07,rMax=maxV+span*0.13,range=rMax-rMin;
+  var toX=function(v){return LW+((v-rMin)/range)*barArea;};
+  var zX=toX(0);
+  ctx.clearRect(0,0,W,H);
+  var step=nice(range/5),gS=Math.ceil(rMin/step)*step;
+  ctx.strokeStyle='#EAEAEA';ctx.lineWidth=1;
+  for(var v=gS;v<=rMax+step*0.01;v+=step){
+    var x=toX(v);if(x<LW-1||x>W-padR+1)continue;
+    ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,H-padB);ctx.stroke();
+    ctx.fillStyle='#AAAAAA';ctx.font='9px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(formatVal(v),x,H-padB+3);
+  }
+  if(zX>=LW&&zX<=W-padR){ctx.strokeStyle='#888';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(zX,padT-2);ctx.lineTo(zX,H-padB+2);ctx.stroke();}
+  rows.forEach(function(row,i){
+    var y=padT+i*rowH+barPd;
+    var val=getVal(row);
+    var col=getColor(row,val);
+    var x1=toX(val),bx=Math.min(zX,x1),bw=Math.max(0,Math.abs(x1-zX));
+    ctx.fillStyle=col+'22';ctx.fillRect(bx,y,bw,barH);
+    ctx.fillStyle=col;ctx.fillRect(bx,y+barH-2,bw,2);
+    ctx.fillStyle='#333';ctx.font='10px "Segoe UI",sans-serif';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(getLabel(row),LW-5,y+barH/2);
+    var lbl=formatVal(val);ctx.font='bold 9px "Segoe UI",sans-serif';var lw=ctx.measureText(lbl).width;
+    ctx.fillStyle=col;
+    if(val>=0){if(x1+3+lw<W-2){ctx.textAlign='left';ctx.fillText(lbl,x1+3,y+barH/2);}}
+    else{if(x1-3-lw>LW){ctx.textAlign='right';ctx.fillText(lbl,x1-3,y+barH/2);}}
+  });
+}
+
+function drawC1(){
+  var p=prep('c1'),data=filtered();if(!data.length){noData(p.ctx,p.W,p.H);return;}
+  drawHBar({ctx:p.ctx,W:p.W,H:p.H,rows:[...data].sort(function(a,b){return a.pel-b.pel;}),
+    getVal:function(r){return r.pel;},getLabel:function(r){return r.s.substring(0,8);},
+    getColor:function(_,v){return v>=0?'#16A34A':'#DC2626';},formatVal:fS,LW:78,padR:14});
+}
+
+function drawC2(){
+  var p=prep('c2'),data=filtered();if(!data.length){noData(p.ctx,p.W,p.H);return;}
+  var ctx=p.ctx,W=p.W,H=p.H;
+  var sorted=[...data].sort(function(a,b){return(b.p>0?b.isl/b.p:0)-(a.p>0?a.isl/a.p:0);});
+  var n=sorted.length,padT=6,padB=22,padR=56,LW=68;
+  var rowH=(H-padT-padB)/n,barPd=Math.max(1,rowH*0.13),barH=Math.max(7,rowH-barPd*2);
+  var barArea=W-LW-padR;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#EAEAEA';ctx.lineWidth=1;
+  for(var i=0;i<=4;i++){var x=LW+(i/4)*barArea;ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,H-padB);ctx.stroke();ctx.fillStyle='#AAAAAA';ctx.font='9px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText((i*25)+'%',x,H-padB+4);}
+  var x100=LW+barArea;ctx.strokeStyle='#BBBBBB';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x100,padT-2);ctx.lineTo(x100,H-padB+2);ctx.stroke();
+  sorted.forEach(function(r,i){
+    var y=padT+i*rowH+barPd;
+    ctx.fillStyle='#333';ctx.font='10px "Segoe UI",sans-serif';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(r.s.substring(0,7),LW-4,y+barH/2);
+    var ts=r.p>0?r.isl/r.p:0,sc=ts>1?1/ts:1,x=LW;
+    C2C.forEach(function(cat){var sh=r.p>0?r[cat.k]/r.p:0,w=sh*sc*barArea;if(w>=1){ctx.fillStyle=cat.c;ctx.fillRect(x,y,w,barH);x+=w;}});
+    ctx.font='bold 9px "Segoe UI",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=ts>1?'#DC2626':'#6B7280';ctx.fillText(fP(ts*100),x100+4,y+barH/2);
+  });
+}
+
+function drawC3(){
+  var p=prep('c3'),data=filtered();if(!data.length){noData(p.ctx,p.W,p.H);return;}
+  var map={};
+  data.forEach(function(r){if(!map[r.dv])map[r.dv]={p:0,pel:0};map[r.dv].p+=r.p;map[r.dv].pel+=r.pel;});
+  var dvs=Object.entries(map).map(function(e){return{dv:e[0],marz:e[1].p>0?e[1].pel/e[1].p*100:0};}).sort(function(a,b){return a.marz-b.marz;});
+  drawHBar({ctx:p.ctx,W:p.W,H:p.H,rows:dvs,
+    getVal:function(d){return d.marz;},getLabel:function(d){return d.dv;},
+    getColor:function(_,v){return v>=0?'#2563EB':'#DC2626';},
+    formatVal:function(v){var neg=v<0;return(neg?'\u2212':'')+Math.abs(v).toLocaleString('lt-LT',{minimumFractionDigits:1,maximumFractionDigits:1})+'\u00a0%';},
+    LW:82,padR:14});
+}
+
+var _rt;
+window.addEventListener('resize',function(){clearTimeout(_rt);_rt=setTimeout(function(){if(PAGE==='p3')drawAll();},150);});
+</script>
+</body>
+</html>
